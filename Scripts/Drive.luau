@@ -19,147 +19,147 @@ script.Parent:WaitForChild("Values")
 	local VirtualInputEnabled		= true
 
 --[[Dependencies]]
-	local player = game.Players.LocalPlayer
-	local mouse = player:GetMouse()
-	local UserInputService = game:GetService("UserInputService")
-	local GuiService = game:GetService("GuiService")
-	local RunService = game:GetService("RunService")
-	local car = script.Parent.Car.Value
-	local _Tune = require(car["A-Chassis Tune"])
-	local Units = require(car["A-Chassis Tune"].README.Units)
-	local values = script.Parent.Values
-	
-	local VirtualInput = script:FindFirstChild("VirtualInput")
-	
-	player.PlayerGui.ScreenOrientation = Enum.ScreenOrientation.LandscapeSensor
-	
-	if _Tune.Mobile then
-		GuiService.TouchControlsEnabled = false
-	end
-	local _MobileMode = "Tap"
-	local _MobileModes = {"Tap", "Tilt"}
-	
+local player = game.Players.LocalPlayer
+local mouse = player:GetMouse()
+local UserInputService = game:GetService("UserInputService")
+local GuiService = game:GetService("GuiService")
+local RunService = game:GetService("RunService")
+local car = script.Parent.Car.Value
+local _Tune = require(car["A-Chassis Tune"])
+local Units = require(car["A-Chassis Tune"].README.Units)
+local values = script.Parent.Values
+
+local VirtualInput = script:FindFirstChild("VirtualInput")
+
+player.PlayerGui.ScreenOrientation = Enum.ScreenOrientation.LandscapeSensor
+
+if _Tune.Mobile then
+    GuiService.TouchControlsEnabled = false
+end
+local _MobileMode = "Tap"
+local _MobileModes = {"Tap", "Tilt"}
+
 --[[Output Scaling Factor]]
-	local FBrakeForce =_Tune.BrakeForce * 9.80665 * Units.Force_N*_Tune.BrakeBias--luaint edit, conversion to SI unit Detomiks
-	local RBrakeForce =_Tune.BrakeForce * 9.80665 * Units.Force_N*(1-_Tune.BrakeBias)--luaint edit
-	local PBrakeForceF = _Tune.PBrakeForce * 9.80665 * Units.Force_N*_Tune.PBrakeBias
-	local PBrakeForceR = _Tune.PBrakeForce * 9.80665 * Units.Force_N*(1-_Tune.PBrakeBias)
-	local EBrakeForce = _Tune.EBrakeForce
-	local SteerOuter  = _Tune.SteerOuter--luaint edit
-	local SteerInner  = _Tune.SteerInner--luaint edit
-	local RSteerOuter = _Tune.RSteerOuter
-	local RSteerInner = _Tune.RSteerInner
+local FBrakeForce =_Tune.BrakeForce * 9.80665 * Units.Force_N*_Tune.BrakeBias--luaint edit, conversion to SI unit Detomiks
+local RBrakeForce =_Tune.BrakeForce * 9.80665 * Units.Force_N*(1-_Tune.BrakeBias)--luaint edit
+local PBrakeForceF = _Tune.PBrakeForce * 9.80665 * Units.Force_N*_Tune.PBrakeBias
+local PBrakeForceR = _Tune.PBrakeForce * 9.80665 * Units.Force_N*(1-_Tune.PBrakeBias)
+local EBrakeForce = _Tune.EBrakeForce
+local SteerOuter  = _Tune.SteerOuter--luaint edit
+local SteerInner  = _Tune.SteerInner--luaint edit
+local RSteerOuter = _Tune.RSteerOuter
+local RSteerInner = _Tune.RSteerInner
 
 --[[Status Vars]]
-	local boolToNum = {[true] = 1, [false] = 0}
-	local min = math.min
-	local max = math.max
+local boolToNum = {[true] = 1, [false] = 0}
+local min = math.min
+local max = math.max
 
-	local _IsOn = _Tune.AutoStart
-	if _Tune.AutoStart and (_Tune.Engine or _Tune.Electric) then script.Parent.IsOn.Value=true end
+local _IsOn = _Tune.AutoStart
+if _Tune.AutoStart and (_Tune.Engine or _Tune.Electric) then script.Parent.IsOn.Value=true end
 
-	local _GSteerT=0
-	local _GSteerC=0
-	
-	local _GThrot=0
-	local _InThrot=0
-	local _IThrot=0
-	local _GBrake=0
-	local _InBrake=0
-	local _IBrake=0
+local _GSteerT=0
+local _GSteerC=0
 
-	local _GClutch = 0
-	local _ClPressing = false
-	local _PlayerClutch = false
-	local _Clutch = 0
-	local _ClutchKick = 0
-	local _ClutchModulate = 0
+local _GThrot=0
+local _InThrot=0
+local _IThrot=0
+local _GBrake=0
+local _InBrake=0
+local _IBrake=0
 
-	local _RPM = _Tune.IgnitionRPM
-	local _OutTorque = 0
-	local _CGear = 0
-	local _PGear = _CGear
-	local _ShiftUp = false
-	local _ShiftDn = false
-	local _Shifting = false
-	local _spLimit = 0
+local _GClutch = 0
+local _ClPressing = false
+local _PlayerClutch = false
+local _Clutch = 0
+local _ClutchKick = 0
+local _ClutchModulate = 0
 
-	local engine = car["A-Chassis Tune"].README:FindFirstChild("CustomEngine") and require(car["A-Chassis Tune"].README:FindFirstChild("CustomEngine")) or nil
+local _RPM = _Tune.IgnitionRPM
+local _OutTorque = 0
+local _CGear = 0
+local _PGear = _CGear
+local _ShiftUp = false
+local _ShiftDn = false
+local _Shifting = false
+local _spLimit = 0
 
-	local _Boost = 0
-	local _TBoost = 0
-	local _SBoost = 0
+local engine = car["A-Chassis Tune"].README:FindFirstChild("CustomEngine") and require(car["A-Chassis Tune"].README:FindFirstChild("CustomEngine")) or nil
 
-	local _HP = 0
-	local _TQ = 0
-	local _NH = 0
-	local _NT = 0
-	local _EH = 0
-	local _ET = 0
-	local _TH = 0
-	local _TT = 0
-	local _SH = 0
-	local _ST = 0
-	local _BH = 0
-	local _BT = 0
+local _Boost = 0
+local _TBoost = 0
+local _SBoost = 0
 
-	local _CVTRatio = _Tune.CVTMaxRatio
-	local _CurrentRatio = _Tune.Ratios[_CGear+2]
-	local _FlywheelEnergy = 0
-	local _TorqueVector = _Tune.TorqueVector
+local _HP = 0
+local _TQ = 0
+local _NH = 0
+local _NT = 0
+local _EH = 0
+local _ET = 0
+local _TH = 0
+local _TT = 0
+local _SH = 0
+local _ST = 0
+local _BH = 0
+local _BT = 0
 
-	local _TMode = _Tune.TransModes[1]
+local _CVTRatio = _Tune.CVTMaxRatio
+local _CurrentRatio = _Tune.Ratios[_CGear+2]
+local _FlywheelEnergy = 0
+local _TorqueVector = _Tune.TorqueVector
 
-	local _MSteer = false
-	local _SteerL = false
-	local _SteerR = false
-	local _PBrake = car["A-Chassis Tune"]["A-Chassis Interface"].Values.PBrake.Value
+local _TMode = _Tune.TransModes[1]
 
-	local _TCSTracker = {}
-	local _TCS = _Tune.TCSEnabled
-	local _TCSActive = false
-	local _TCSAmt = 0
+local _MSteer = false
+local _SteerL = false
+local _SteerR = false
+local _PBrake = car["A-Chassis Tune"]["A-Chassis Interface"].Values.PBrake.Value
 
-	local _ABSTracker = {}
-	local _ABS = _Tune.ABSEnabled
-	local _ABSActive = false
-	local _ABSAmt = 0
+local _TCSTracker = {}
+local _TCS = _Tune.TCSEnabled
+local _TCSActive = false
+local _TCSAmt = 0
 
-	local _ESCTracker = {}
-	local _ESC = _Tune.ESCEnabled and _Tune.TCSEnabled
-	local _ESCActive = false
-	local _ESCAmt = 0
-	
-	local _CS = _Tune.CSEnabled
-	local _CSActive = false
-	local _CSAmt = 0
+local _ABSTracker = {}
+local _ABS = _Tune.ABSEnabled
+local _ABSActive = false
+local _ABSAmt = 0
 
-	local FlipWait=tick()
-	local FlipDB=false
+local _ESCTracker = {}
+local _ESC = _Tune.ESCEnabled and _Tune.TCSEnabled
+local _ESCActive = false
+local _ESCAmt = 0
 
-	local _InControls = false
-	local _LastInputWasGamepad = false
+local _CS = _Tune.CSEnabled
+local _CSActive = false
+local _CSAmt = 0
 
-	local revLimiting = false
+local FlipWait=tick()
+local FlipDB=false
 
-	local _WheelSpeedsTable = {}
-	local _WheelSpeeds = {}
-	local _OldVelocity = Vector3.new()
-	local _AvgWheelSpeed = 0
-	local _Acceleration = Vector3.new()
+local _InControls = false
+local _LastInputWasGamepad = false
 
-	local _Center = CFrame.new()
-	local autoshiftvers = _Tune.AutoShiftVers
-	
-	local FWheelCount = 0
-	local RWheelCount = 0
-	local Wheels = {}
-	for _, v in car.Wheels:GetChildren() do
-		if not ((v.Name == "FL" or v.Name == "FR" or v.Name == "F" or v.Name == "RL" or v.Name == "RR" or v.Name == "R") and v:IsA("BasePart")) then continue end
-		table.insert(Wheels, v)
-		FWheelCount += string.find(v.Name, "F") and 1 or 0
-		RWheelCount += (not string.find(v.Name, "F")) and 1 or 0
-	end
+local revLimiting = false
+
+local _WheelSpeedsTable = {}
+local _WheelSpeeds = {}
+local _OldVelocity = Vector3.new()
+local _AvgWheelSpeed = 0
+local _Acceleration = Vector3.new()
+
+local _Center = CFrame.new()
+local autoshiftvers = _Tune.AutoShiftVers
+
+local FWheelCount = 0
+local RWheelCount = 0
+local Wheels = {}
+for _, v in car.Wheels:GetChildren() do
+    if not ((v.Name == "FL" or v.Name == "FR" or v.Name == "F" or v.Name == "RL" or v.Name == "RR" or v.Name == "R") and v:IsA("BasePart")) then continue end
+    table.insert(Wheels, v)
+    FWheelCount += string.find(v.Name, "F") and 1 or 0
+    RWheelCount += (not string.find(v.Name, "F")) and 1 or 0
+end
 
 --[[Shutdown]]
 car.DriveSeat.ChildRemoved:connect(function(child) 
@@ -259,7 +259,7 @@ values.AutoClutch.Value = true
 
 --Input Handler
 function DealWithInput(input,IsRobloxFunction)
-	if (UserInputService:GetFocusedTextBox()==nil) and not _InControls then --Ignore when UI Focus
+	if (UserInputService:GetFocusedTextBox() == nil) and not game:GetService("TextChatService").ChatInputBarConfiguration.IsFocused and not _InControls then --Ignore when UI Focus
 		--Shift Down [Manual Transmission]
 		if (input.KeyCode ==_CTRL["ContlrShiftDown"] or (_MSteer and input.KeyCode==_CTRL["MouseShiftDown"]) or ((not _MSteer) and input.KeyCode==_CTRL["ShiftDown"])) and ((_IsOn and ((_TMode=="Auto" and _CGear<=1) and _Tune.AutoShiftVers == "New") or _TMode=="Semi") or _TMode=="Manual") and input.UserInputState == Enum.UserInputState.Begin then
 			if not _ShiftDn then _ShiftDn = true end
